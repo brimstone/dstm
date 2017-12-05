@@ -9,6 +9,7 @@ import (
 	"os"
 
 	docker "github.com/fsouza/go-dockerclient"
+	"github.com/gorilla/handlers"
 )
 
 var client *docker.Client
@@ -32,7 +33,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	http.HandleFunc("/v1/token/worker", func(w http.ResponseWriter, r *http.Request) {
+	http.Handle("/v1/token/worker", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if os.Getenv("AUTH_WORKER") != r.Header.Get("Authorization") {
 			writeError(w, 403, errors.New("Invalid Auth"))
 			return
@@ -44,9 +45,9 @@ func main() {
 		}
 
 		fmt.Fprintf(w, "%s\n", swarm.JoinTokens.Worker)
-	})
+	})))
 
-	http.HandleFunc("/v1/token/manager", func(w http.ResponseWriter, r *http.Request) {
+	http.Handle("/v1/token/manager", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if os.Getenv("AUTH_MANAGER") != r.Header.Get("Authorization") {
 			writeError(w, 403, errors.New("Invalid Auth"))
 			return
@@ -58,7 +59,7 @@ func main() {
 		}
 
 		fmt.Fprintf(w, "%s\n", swarm.JoinTokens.Manager)
-	})
+	})))
 
 	fmt.Println("Ready to serve")
 	log.Fatal(http.ListenAndServe(":8080", nil))
