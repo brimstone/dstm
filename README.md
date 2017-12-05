@@ -9,7 +9,7 @@ Usage
 Start this on a swarm node, or in a container in the swarm:
 
 ```
-$ AUTH_WORKER=SEKRETTOKEN dstm
+$ AUTH_WORKER=SEKRETTOKEN dstm serve
 ```
 
 Then use curl on a node joining the swarm:
