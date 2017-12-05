@@ -27,3 +27,5 @@ ENV AUTH_WORKER= \
 EXPOSE 8080
 
 ENTRYPOINT ["/dstm"]
+
+CMD ["serve"]
