@@ -27,7 +27,7 @@ Use genrsa to generate these keys.
 func GenToken(cmd *cobra.Command, args []string) {
 	key, _ := cmd.Flags().GetString("key")
 	if key == "" {
-		fmt.Fprintf(os.Stderr, "Must specfy a key with -k\n")
+		fmt.Fprintf(os.Stderr, "Must specify a key with -k\n")
 		os.Exit(1)
 	}
 
