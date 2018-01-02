@@ -24,7 +24,11 @@ func writeError(w http.ResponseWriter, code int, err error) {
 
 // Serve Serve tokens to clients
 func Serve(cmd *cobra.Command, args []string) {
-
+	key := os.Getenv("KEY")
+	if key == "" {
+		fmt.Fprintf(os.Stderr, "Environment variable KEY must be specified.\n")
+		os.Exit(1)
+	}
 	var err error
 	client, err = docker.NewClientFromEnv()
 
@@ -50,7 +54,7 @@ func Serve(cmd *cobra.Command, args []string) {
 		}
 
 		payload := make(map[string]interface{})
-		err := jwt.Verify(os.Getenv("KEY"), bearer[1], &payload)
+		err := jwt.Verify(key, bearer[1], &payload)
 
 		swarm, err := client.InspectSwarm(context.Background())
 		if err != nil {
