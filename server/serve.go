@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -9,6 +10,7 @@ import (
 	"os"
 	"strings"
 
+	dstm "github.com/brimstone/dstm/types"
 	"github.com/brimstone/jwt/jwt"
 	docker "github.com/fsouza/go-dockerclient"
 	"github.com/gorilla/handlers"
@@ -62,13 +64,32 @@ func Serve(cmd *cobra.Command, args []string) {
 			return
 		}
 
-		if payload["manager"].(bool) {
-			fmt.Fprintf(w, "%s\n", swarm.JoinTokens.Manager)
-		} else {
-			fmt.Fprintf(w, "%s\n", swarm.JoinTokens.Worker)
+		// Create struct to send to client
+		clientToken := dstm.Token{
+			Addresses: []string{},
 		}
+		nodes, err := client.ListNodes(docker.ListNodesOptions{})
+		for _, node := range nodes {
+			// TODO if addr is 127.0.0.1, probably should replace with how the client got here
+			clientToken.Addresses = append(clientToken.Addresses, node.Status.Addr+":2377")
+		}
+
+		// Add token to client
+		if payload["manager"].(bool) {
+			clientToken.Token = swarm.JoinTokens.Manager
+		} else {
+			clientToken.Token = swarm.JoinTokens.Worker
+		}
+
+		// Encode as JSON
+		clientJSON, _ := json.Marshal(clientToken)
+		// Send JSON to client
+		w.Header().Set("Content-Type", "application/json")
+		fmt.Fprintf(w, "%s\n", clientJSON)
+
+		// TODO Set timer to rotate tokens
 	})))
 
-	fmt.Println("Ready to serve")
+	fmt.Println("Ready to serve on :8080")
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
