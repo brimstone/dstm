@@ -38,6 +38,11 @@ func Serve(cmd *cobra.Command, args []string) {
 	}
 
 	http.Handle("/v2/token", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Report our source location
+		w.Header().Add("X-Source", "https://github.com/brimstone/dstm")
+		// Report our LICENSE
+		w.Header().Add("X-License", "AGPLv3 http://www.gnu.org/licenses/agpl-3.0.txt")
+
 		bearer := strings.Split(r.Header.Get("Authorization"), " ")
 		if len(bearer) != 2 || bearer[0] != "Bearer" {
 			writeError(w, 403, errors.New("Invalid Auth"))
