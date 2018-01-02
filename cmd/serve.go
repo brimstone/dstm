@@ -29,5 +29,5 @@ var serveCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(serveCmd)
-	// TODO pass in --port and --auth-worker and --auth-manager
+	// TODO pass in --port
 }

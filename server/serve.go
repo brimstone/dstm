@@ -7,7 +7,9 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 
+	"github.com/brimstone/jwt/jwt"
 	docker "github.com/fsouza/go-dockerclient"
 	"github.com/gorilla/handlers"
 	"github.com/spf13/cobra"
@@ -35,32 +37,27 @@ func Serve(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	http.Handle("/v1/token/worker", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if os.Getenv("AUTH_WORKER") != r.Header.Get("Authorization") {
+	http.Handle("/v2/token", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		bearer := strings.Split(r.Header.Get("Authorization"), " ")
+		if len(bearer) != 2 || bearer[0] != "Bearer" {
 			writeError(w, 403, errors.New("Invalid Auth"))
 			return
 		}
+
+		payload := make(map[string]interface{})
+		err := jwt.Verify(os.Getenv("KEY"), bearer[1], &payload)
+
 		swarm, err := client.InspectSwarm(context.Background())
 		if err != nil {
 			writeError(w, 503, errors.New("Unable to connect to swarm"))
 			return
 		}
 
-		fmt.Fprintf(w, "%s\n", swarm.JoinTokens.Worker)
-	})))
-
-	http.Handle("/v1/token/manager", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if os.Getenv("AUTH_MANAGER") != r.Header.Get("Authorization") {
-			writeError(w, 403, errors.New("Invalid Auth"))
-			return
+		if payload["manager"].(bool) {
+			fmt.Fprintf(w, "%s\n", swarm.JoinTokens.Manager)
+		} else {
+			fmt.Fprintf(w, "%s\n", swarm.JoinTokens.Worker)
 		}
-		swarm, err := client.InspectSwarm(context.Background())
-		if err != nil {
-			writeError(w, 503, errors.New("Unable to connect to swarm"))
-			return
-		}
-
-		fmt.Fprintf(w, "%s\n", swarm.JoinTokens.Manager)
 	})))
 
 	fmt.Println("Ready to serve")
